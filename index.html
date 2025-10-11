@@ -1,15 +1,363 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Your Special Message</title>
-</head>
-<body style="font-family: Arial, sans-serif; text-align: center; margin-top: 20%;">
-  <h2>👀 Hey, this is my message just for you</h2>
-  <p>If you see this, I know you clicked my link 😉</p>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Liquid Glass — Generative Extract</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg1: rgba(216,188,255,0.95);
+    --bg2: rgba(255,255,255,0.9);
+    --glass-bg: rgba(255,255,255,0.10);
+    --glass-border: rgba(255,255,255,0.28);
+    --accent: #b889ff; /* single glowing color - change to taste */
+    --accent-strong: #8b5cf6;
+    --text: #ffffff;
+  }
 
-  <!-- Counter.dev Tracker -->
-  <script src="https://cdn.counter.dev/script.js" data-id="0e2a163f-36a4-4c57-b2e2-f589e292e94e" data-utcoffset="6"></script>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family:'Poppins',system-ui,Segoe UI,Roboto,Helvetica,Arial;
+    background:
+      radial-gradient(1200px 700px at 10% 20%, rgba(186,150,255,0.08), transparent 10%),
+      radial-gradient(900px 500px at 90% 80%, rgba(255,240,255,0.06), transparent 10%),
+      linear-gradient(180deg, var(--bg1), var(--bg2));
+    overflow:hidden;
+    -webkit-font-smoothing:antialiased;
+    color:var(--text);
+  }
+
+  /* centered stage */
+  .stage{
+    width:92vw;
+    max-width:820px;
+    height:60vh;
+    min-height:420px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    position:relative;
+    pointer-events:none;
+  }
+
+  /* Liquid glass card */
+  .glass {
+    width:0;
+    height:0;
+    border-radius:22px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.10));
+    box-shadow:
+      0 10px 30px rgba(140,80,220,0.10),
+      inset 0 1px 0 rgba(255,255,255,0.04);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(18px) saturate(120%);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:28px;
+    transition: width 700ms cubic-bezier(.2,.9,.3,1), height 700ms cubic-bezier(.2,.9,.3,1), transform 700ms ease;
+    pointer-events:auto;
+    position:relative;
+    overflow:visible;
+  }
+
+  /* inner glossy highlight to simulate 'liquid glass' */
+  .glass::before{
+    content:"";
+    position:absolute;
+    top:-18%;
+    left:-10%;
+    width:50%;
+    height:70%;
+    transform:rotate(-20deg);
+    background: linear-gradient(120deg, rgba(255,255,255,0.35), rgba(255,255,255,0.02));
+    filter:blur(20px);
+    border-radius:40%;
+    opacity:0;
+    transition:opacity 600ms ease;
+    pointer-events:none;
+  }
+  .glass::after{
+    content:"";
+    position:absolute;
+    right:8%;
+    bottom:6%;
+    width:160px;
+    height:60px;
+    background: radial-gradient(closest-side, rgba(184,137,255,0.12), transparent 40%);
+    filter: blur(14px);
+    transform: translateZ(0);
+    pointer-events:none;
+    opacity:0;
+    transition:opacity 600ms ease;
+  }
+
+  .glass.expanded{
+    width:560px;
+    height:260px;
+  }
+  .glass.expanded::before{ opacity:1; }
+  .glass.expanded::after{ opacity:1; }
+
+  /* Message */
+  .message{
+    max-width:84%;
+    text-align:center;
+    font-weight:400;
+    line-height:1.45;
+    font-size:1.15rem;
+    color:var(--text);
+    text-shadow: 0 4px 18px rgba(139,92,246,0.18);
+    pointer-events:none;
+    opacity:0;
+    transition:opacity 300ms ease;
+  }
+
+  .message.blur { filter: blur(10px) brightness(0.85); opacity:0.35; transition: all 350ms ease; }
+
+  /* word spans used for generative fade */
+  .message span{
+    display:inline-block;
+    opacity:0;
+    transform: translateY(6px);
+    filter: blur(0);
+    text-shadow: 0 0 10px rgba(184,137,255,0.14);
+    will-change:opacity, transform;
+    /* individual delays applied inline */
+  }
+
+  /* fade-in animation for words */
+  @keyframes wordFade {
+    from { opacity:0; transform: translateY(6px) }
+    to   { opacity:1; transform: translateY(0) }
+  }
+
+  /* loader area */
+  .loader-wrap{
+    width:82%;
+    margin-top:18px;
+    display:flex;
+    align-items:center;
+    flex-direction:column;
+    gap:10px;
+    pointer-events:none;
+    opacity:0;
+    transform: translateY(6px);
+    transition:opacity 300ms ease, transform 300ms ease;
+  }
+  .loader-wrap.show{ opacity:1; transform:translateY(0) }
+
+  .loading-text{
+    font-size:0.98rem;
+    font-weight:600;
+    color:var(--text);
+    text-align:center;
+    text-shadow:
+      0 6px 20px rgba(139,92,246,0.12),
+      0 0 18px rgba(184,137,255,0.06);
+    pointer-events:none;
+  }
+
+  /* single-color glowing bar */
+  .bar-outer{
+    width:100%;
+    height:14px;
+    background: rgba(255,255,255,0.06);
+    border-radius:12px;
+    overflow:hidden;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
+  }
+
+  .bar-inner{
+    height:100%;
+    width:0%;
+    background: linear-gradient(90deg, var(--accent), var(--accent-strong));
+    border-radius:12px;
+    box-shadow:
+      0 6px 20px rgba(139,92,246,0.22),
+      0 0 30px rgba(184,137,255,0.12),
+      inset 0 -4px 18px rgba(255,255,255,0.06);
+    transition: width 220ms linear;
+  }
+
+  /* subtle percentage marker bubble */
+  .marker{
+    position:absolute;
+    top:-28px;
+    transform:translateX(-50%);
+    font-size:0.82rem;
+    background: rgba(18,10,30,0.45);
+    border: 1px solid rgba(255,255,255,0.06);
+    color:var(--text);
+    padding:6px 8px;
+    border-radius:10px;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 6px 18px rgba(18,10,30,0.25);
+    display:none;
+  }
+
+  /* small responsive tweaks */
+  @media (max-width:640px){
+    .glass.expanded{ width:92%; height:220px; }
+    .message{ font-size:1rem; }
+  }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <div class="glass" id="glass">
+      <div class="message" id="message" aria-live="polite">
+        Welcome, Observer. 👀 Hey, this is my message just for you, If you see this, I know you clicked my link 😉
+      </div>
+
+      <div class="loader-wrap" id="loaderWrap" aria-hidden="true" role="status">
+        <div class="bar-outer" id="barOuter" style="position:relative;">
+          <div class="bar-inner" id="barInner"></div>
+          <div class="marker" id="marker" aria-hidden="true">25%</div>
+        </div>
+        <div class="loading-text" id="loadingText">Extracting your information...</div>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* --------------------------
+   Timing configuration (change these)
+   -------------------------- */
+const MOVE_TOTAL_MS = 6000; // total move time (actual moving durations sum) — adjust to try timings
+const PAUSE_MS = 800;       // how long the bar *holds* at 25% and 75%
+/* -------------------------- */
+
+const glass = document.getElementById('glass');
+const messageEl = document.getElementById('message');
+const loaderWrap = document.getElementById('loaderWrap');
+const barInner = document.getElementById('barInner');
+const loadingText = document.getElementById('loadingText');
+const marker = document.getElementById('marker');
+
+let originalText = messageEl.innerText.trim();
+
+/* utility: create word spans for fade-in generative style */
+function renderWordSpans(text, totalDuration = 2000){
+  const words = text.split(' ');
+  const perDelay = totalDuration / Math.max(words.length,1);
+  messageEl.innerHTML = '';
+  words.forEach((w, i) => {
+    const span = document.createElement('span');
+    span.textContent = w + (i < words.length-1 ? ' ' : '');
+    span.style.animation = `wordFade 420ms cubic-bezier(.2,.9,.3,1) forwards`;
+    span.style.animationDelay = `${(i * perDelay)}ms`;
+    messageEl.appendChild(span);
+  });
+  // ensure message visible
+  messageEl.style.opacity = 1;
+}
+
+/* animate glass expansion then start generative text */
+function startSequence(){
+  // Step 1: pop-in & expand
+  setTimeout(()=> {
+    glass.classList.add('expanded');
+  }, 300);
+
+  // wait a little while and run generative fade (word-by-word fade-in)
+  const WAIT_BEFORE_GENERATIVE = 900;
+  setTimeout(()=> {
+    renderWordSpans(originalText, 2000);           // total generative duration (ms)
+    // after words have all faded in, blur and start loader
+    const generativeDuration = 2000;
+    setTimeout(()=> {
+      messageEl.classList.add('blur');             // sudden blur
+      startLoadingSequence();
+    }, generativeDuration + 300);
+  }, WAIT_BEFORE_GENERATIVE + 400);
+}
+
+/* Build a smooth animation that moves bar from current% to target% over duration */
+function animateBarTo(targetPercent, durationMs){
+  return new Promise(resolve => {
+    const startTime = performance.now();
+    const startWidth = parseFloat(barInner.style.width) || 0;
+    const targetWidth = targetPercent;
+    function step(now){
+      const elapsed = now - startTime;
+      const t = Math.min(1, elapsed / durationMs);
+      // linear easing (change if you want easing)
+      const current = startWidth + (targetWidth - startWidth) * t;
+      barInner.style.width = current + '%';
+      // update marker position
+      marker.style.left = `${(current/100) * 100}%`;
+      if(elapsed < durationMs) requestAnimationFrame(step);
+      else resolve();
+    }
+    requestAnimationFrame(step);
+  });
+}
+
+/* orchestrate the three phases with real pauses and text changes */
+async function startLoadingSequence(){
+  loaderWrap.classList.add('show');
+  loaderWrap.setAttribute('aria-hidden','false');
+
+  loadingText.textContent = "Extracting your information...";
+  marker.style.display = 'block';
+
+  // split MOVE_TOTAL_MS across segments proportionally to distances: 0->25,25->75,75->100
+  const seg1 = MOVE_TOTAL_MS * 0.25; // to 25%
+  const seg2 = MOVE_TOTAL_MS * 0.50; // 25->75 (50% distance)
+  const seg3 = MOVE_TOTAL_MS * 0.25; // 75->100
+
+  // move to 25%
+  await animateBarTo(25, Math.max(150, seg1));
+  // small visual "snap" to emphasize pause (keep it still for PAUSE_MS)
+  await new Promise(r => setTimeout(r, PAUSE_MS));
+
+  // update text and marker
+  loadingText.textContent = "Transferring your information...";
+  marker.textContent = "75%";
+  // move to 75%
+  await animateBarTo(75, Math.max(150, seg2));
+  await new Promise(r => setTimeout(r, PAUSE_MS));
+
+  // final text update
+  loadingText.textContent = "Finalizing...";
+  marker.textContent = "100%";
+  // move to 100%
+  await animateBarTo(100, Math.max(150, seg3));
+
+  // finish: small hold so user reads final state
+  await new Promise(r => setTimeout(r, 420));
+
+  // fade loader away, reveal message
+  loaderWrap.classList.remove('show');
+  loaderWrap.setAttribute('aria-hidden','true');
+  // gentle fade-out and reset
+  barInner.style.width = '0%';
+  marker.style.display = 'none';
+
+  // unblur and make message fully visible
+  messageEl.classList.remove('blur');
+  // you can optionally change message content back or leave original
+}
+
+/* Kick off on load */
+window.addEventListener('load', ()=> {
+  // ensure elements start in clean state
+  barInner.style.width = '0%';
+  marker.style.display = 'none';
+  // run sequence (pop-in expand -> generative -> blur -> loader -> reveal)
+  startSequence();
+});
+
+/* For debugging: expose controls on console if you want quick tests:
+   window.testSettings = { setTimes(ms, pause){ MOVE_TOTAL_MS = ms; PAUSE_MS = pause; } }
+*/
+</script>
 </body>
 </html>
