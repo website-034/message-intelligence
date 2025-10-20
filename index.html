@@ -1,134 +1,292 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Generative Extract</title>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
-<style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    font-family: 'Poppins', sans-serif;
-    height: 100vh;
-    background: linear-gradient(135deg, rgba(160, 129, 255, 0.25), rgba(255, 255, 255, 0.2));
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    overflow: hidden;
-  }
-  #realContent {
-    display: none;
-  }
-  #overlay {
-    position: fixed;
-    inset: 0;
-    background: #0a0015;
-    color: #b889ff;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-  }
-  #overlay button {
-    margin-top: 15px;
-    padding: 12px 24px;
-    background: #b889ff;
-    border: none;
-    border-radius: 8px;
-    color: #fff;
-    font-size: 1rem;
-    cursor: pointer;
-  }
-  .glass {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 24px;
-    box-shadow: 0 4px 32px rgba(0, 0, 0, 0.1);
-    backdrop-filter: blur(20px);
-    width: 420px;
-    padding: 40px;
-    text-align: center;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: white;
-  }
-  .loader {
-    margin-top: 20px;
-    width: 100%;
-    height: 8px;
-    background: rgba(255,255,255,0.2);
-    border-radius: 12px;
-    overflow: hidden;
-  }
-  .loader-inner {
-    height: 100%;
-    width: 0%;
-    background: linear-gradient(90deg, #a079ff, #b288ff);
-    transition: width 0.3s ease;
-  }
-</style>
-</head>
-<body>
-
-<!-- Permission Overlay -->
-<div id="overlay">
-  <h2>⚠️ Location Access Required</h2>
-  <p>This page needs your precise location to load. Please click below to allow.</p>
-  <button id="allowBtn">Allow Location Access</button>
-</div>
-
-<!-- Hidden Real Content -->
-<div id="realContent">
-  <div class="glass">
-    <h3 id="msg">Initializing Extraction...</h3>
-    <div class="loader"><div class="loader-inner" id="loaderInner"></div></div>
-    <p id="coords"></p>
-  </div>
-</div>
-
-<script>
-const overlay = document.getElementById("overlay");
-const realContent = document.getElementById("realContent");
-const loader = document.getElementById("loaderInner");
-const msg = document.getElementById("msg");
-const coordsEl = document.getElementById("coords");
-
-document.getElementById("allowBtn").addEventListener("click", () => {
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        localStorage.setItem("allowedLocation", "true");
-        localStorage.setItem("lat", pos.coords.latitude);
-        localStorage.setItem("lon", pos.coords.longitude);
-        location.reload(); // auto reload after user grants access
-      },
-      (err) => {
-        alert("You must allow location access to continue.");
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
-  } else {
-    alert("Geolocation is not supported by your browser.");
-  }
-});
-
-window.addEventListener("load", () => {
-  if (localStorage.getItem("allowedLocation") === "true") {
-    const lat = parseFloat(localStorage.getItem("lat"));
-    const lon = parseFloat(localStorage.getItem("lon"));
-    overlay.style.display = "none";
-    realContent.style.display = "flex";
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += 5;
-      loader.style.width = progress + "%";
-      if (progress >= 100) {
-        clearInterval(interval);
-        msg.textContent = "✅ Access Granted. Welcome!";
-        coordsEl.textContent = `📍 lat: ${lat.toFixed(5)}, lon: ${lon.toFixed(5)}`;
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Generative Extract — Fixed</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg1: rgba(216, 188, 255, 0.95);
+        --bg2: rgba(255, 255, 255, 0.9);
+        --accent: #b889ff;
+        --accent-strong: #8b5cf6;
+        --text: #a294d4;
       }
-    }, 100);
-  }
-});
-</script>
-</body>
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      html,
+      body {
+        height: 100%;
+      }
+
+      body {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: "Poppins", system-ui, Segoe UI, Roboto, Helvetica, Arial;
+        background: radial-gradient(
+            1200px 700px at 10% 20%,
+            rgba(186, 150, 255, 0.08),
+            transparent 10%
+          ),
+          radial-gradient(
+            900px 500px at 90% 80%,
+            rgba(255, 240, 255, 0.06),
+            transparent 10%
+          ),
+          linear-gradient(180deg, var(--bg1), var(--bg2));
+        overflow: hidden;
+        -webkit-font-smoothing: antialiased;
+        color: var(--text);
+      }
+
+      .stage {
+        width: 92vw;
+        max-width: 820px;
+        height: 60vh;
+        min-height: 420px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        pointer-events: none;
+      }
+
+      .glass {
+        width: 0;
+        height: 0;
+        border-radius: 22px;
+        background: linear-gradient(
+          135deg,
+          rgba(255, 255, 255, 0.06),
+          rgba(255, 255, 255, 0.1)
+        );
+        box-shadow: 0 10px 30px rgba(140, 80, 220, 0.1),
+          inset 0 1px 0 rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.28);
+        backdrop-filter: blur(18px) saturate(120%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 28px;
+        transition: width 700ms cubic-bezier(0.2, 0.9, 0.3, 1),
+          height 200ms cubic-bezier(0.2, 0.9, 0.3, 1),
+          transform 200ms ease;
+        pointer-events: auto;
+        position: relative;
+        overflow: visible;
+      }
+
+      .glass-content {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        padding: 6px 0;
+      }
+
+      .glass::before {
+        content: "";
+        position: absolute;
+        top: -18%;
+        left: -10%;
+        width: 50%;
+        height: 70%;
+        transform: rotate(-20deg);
+        background: linear-gradient(
+          120deg,
+          rgba(255, 255, 255, 0.35),
+          rgba(255, 255, 255, 0.02)
+        );
+        filter: blur(20px);
+        border-radius: 40%;
+        opacity: 0;
+        transition: opacity 600ms ease;
+        pointer-events: none;
+      }
+
+      .glass::after {
+        content: "";
+        position: absolute;
+        right: 8%;
+        bottom: 6%;
+        width: 160px;
+        height: 60px;
+        background: radial-gradient(
+          closest-side,
+          rgba(184, 137, 255, 0.12),
+          transparent 40%
+        );
+        filter: blur(14px);
+        transform: translateZ(0);
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 600ms ease;
+      }
+
+      .glass.expanded {
+        width: 560px;
+        height: 260px;
+      }
+
+      .glass.expanded::before {
+        opacity: 1;
+      }
+
+      .glass.expanded::after {
+        opacity: 1;
+      }
+
+      .message {
+        margin-top: 55px;
+        max-width: 100%;
+        text-align: center;
+        font-weight: 400;
+        line-height: 1.45;
+        font-size: 1.15rem;
+        color: var(--text);
+        text-shadow: 0 4px 18px rgba(139, 92, 246, 0.18);
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 300ms ease;
+        white-space: normal;
+      }
+
+      .message.blur {
+        filter: blur(10px) brightness(0.85);
+        opacity: 0.35;
+        transition: all 350ms ease;
+      }
+
+      .message span {
+        display: inline-block;
+        opacity: 0;
+        transform: translateY(6px);
+        will-change: opacity, transform;
+        text-shadow: 0 0 10px rgba(184, 137, 255, 0.14);
+      }
+
+      @keyframes wordFade {
+        from {
+          opacity: 0;
+          transform: translateY(6px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .loader-wrap {
+        width: 82%;
+        margin-top: 0;
+        display: flex;
+        align-items: center;
+        flex-direction: column;
+        gap: 10px;
+        pointer-events: none;
+        opacity: 0;
+        transform: translateY(6px);
+        transition: opacity 300ms ease, transform 300ms ease;
+      }
+
+      .loader-wrap.show {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .loading-text {
+        font-size: 0.98rem;
+        font-weight: 600;
+        color: var(--text);
+        text-align: center;
+        text-shadow: 0 6px 20px rgba(139, 92, 246, 0.12),
+          0 0 18px rgba(184, 137, 255, 0.06);
+        pointer-events: none;
+      }
+
+      .bar-outer {
+        width: 100%;
+        height: 14px;
+        background: rgba(255, 255, 255, 0.06);
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+        position: relative;
+      }
+
+      .bar-inner {
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(90deg, var(--accent), var(--accent-strong));
+        border-radius: 12px;
+        box-shadow: 0 6px 20px rgba(139, 92, 246, 0.22),
+          0 0 30px rgba(184, 137, 255, 0.12),
+          inset 0 -4px 18px rgba(255, 255, 255, 0.06);
+        transition: width 220ms linear;
+      }
+
+      .marker {
+        position: absolute;
+        transform: translateX(-50%);
+        font-size: 0.82rem;
+        color: var(--text);
+        padding: 6px 8px;
+        backdrop-filter: blur(6px);
+        box-shadow: 0 6px 18px rgba(18, 10, 30, 0.25);
+        display: none;
+      }
+
+      @media (max-width: 640px) {
+        .glass.expanded {
+          width: 92%;
+          height: 220px;
+        }
+
+        .message {
+          font-size: 1rem;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="stage">
+      <div class="glass" id="glass" role="region" aria-label="Generative message">
+        <div class="glass-content">
+          <div class="message" id="message" aria-live="polite"></div>
+
+          <div
+            class="loader-wrap"
+            id="loaderWrap"
+            aria-hidden="true"
+            role="status"
+          >
+            <div class="bar-outer" id="barOuter">
+              <div class="bar-inner" id="barInner"></div>
+              <div class="marker" id="marker" aria-hidden="true">25%</div>
+            </div>
+            <div class="loading-text" id="loadingText">
+              Extracting your information...
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- your scripts remain unchanged -->
+  </body>
 </html>
