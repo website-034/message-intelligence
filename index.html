@@ -1,219 +1,134 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Generative Extract — Fixed</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    body {
-      font-family: 'Poppins', sans-serif;
-      height: 100vh;
-      background: linear-gradient(135deg, rgba(160, 129, 255, 0.25), rgba(255, 255, 255, 0.2));
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      backdrop-filter: blur(20px);
-      overflow: hidden;
-    }
-
-    .stage {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      width: 100%;
-      height: 100%;
-    }
-
-    .glass {
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 24px;
-      box-shadow: 0 4px 32px rgba(0, 0, 0, 0.1);
-      backdrop-filter: blur(20px);
-      width: 420px;
-      padding: 40px;
-      text-align: center;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      animation: fadeIn 1.2s ease;
-    }
-
-    .message {
-      font-size: 1.1rem;
-      color: #fff;
-      margin-bottom: 20px;
-    }
-
-    .loader-wrap {
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      animation: fadeIn 0.8s ease;
-    }
-
-    .bar-outer {
-      width: 100%;
-      height: 8px;
-      background: rgba(255, 255, 255, 0.15);
-      border-radius: 12px;
-      overflow: hidden;
-      position: relative;
-      margin-bottom: 12px;
-    }
-
-    .bar-inner {
-      height: 100%;
-      width: 0%;
-      background: linear-gradient(90deg, #a079ff, #b288ff);
-      border-radius: 12px;
-      transition: width 0.4s ease;
-    }
-
-    .marker {
-      position: absolute;
-      top: -25px;
-      right: 0;
-      color: #fff;
-      font-size: 0.8rem;
-    }
-
-    .loading-text {
-      color: #ddd;
-      font-size: 0.9rem;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Generative Extract</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Poppins', sans-serif;
+    height: 100vh;
+    background: linear-gradient(135deg, rgba(160, 129, 255, 0.25), rgba(255, 255, 255, 0.2));
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+  }
+  #realContent {
+    display: none;
+  }
+  #overlay {
+    position: fixed;
+    inset: 0;
+    background: #0a0015;
+    color: #b889ff;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+  }
+  #overlay button {
+    margin-top: 15px;
+    padding: 12px 24px;
+    background: #b889ff;
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 1rem;
+    cursor: pointer;
+  }
+  .glass {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 24px;
+    box-shadow: 0 4px 32px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(20px);
+    width: 420px;
+    padding: 40px;
+    text-align: center;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+  }
+  .loader {
+    margin-top: 20px;
+    width: 100%;
+    height: 8px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .loader-inner {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #a079ff, #b288ff);
+    transition: width 0.3s ease;
+  }
+</style>
 </head>
 <body>
 
-<!-- Real content hidden by default -->
-<div id="realContent" style="display:none;">
-  <div class="stage">
-    <div class="glass" id="glass">
-      <div class="message" id="message"></div>
-      <div class="loader-wrap" id="loaderWrap">
-        <div class="bar-outer">
-          <div class="bar-inner" id="barInner"></div>
-          <div class="marker" id="marker">25%</div>
-        </div>
-        <div class="loading-text" id="loadingText">Extracting your information...</div>
-      </div>
-    </div>
+<!-- Permission Overlay -->
+<div id="overlay">
+  <h2>⚠️ Location Access Required</h2>
+  <p>This page needs your precise location to load. Please click below to allow.</p>
+  <button id="allowBtn">Allow Location Access</button>
+</div>
+
+<!-- Hidden Real Content -->
+<div id="realContent">
+  <div class="glass">
+    <h3 id="msg">Initializing Extraction...</h3>
+    <div class="loader"><div class="loader-inner" id="loaderInner"></div></div>
+    <p id="coords"></p>
   </div>
 </div>
 
 <script>
-  // --- Main UI logic ---
-  function startGlassAnimation() {
-    const messageEl = document.getElementById("message");
-    const loaderWrap = document.getElementById("loaderWrap");
-    const barInner = document.getElementById("barInner");
-    const marker = document.getElementById("marker");
+const overlay = document.getElementById("overlay");
+const realContent = document.getElementById("realContent");
+const loader = document.getElementById("loaderInner");
+const msg = document.getElementById("msg");
+const coordsEl = document.getElementById("coords");
 
-    const FULL_MESSAGE = "⚠️ Sensitive Information Detected. Initializing Extraction Protocol...";
-    const GREETING = "✅ Extraction complete. Welcome back.";
-
-    let index = 0;
-
-    function showMessage() {
-      if (index < FULL_MESSAGE.length) {
-        messageEl.textContent += FULL_MESSAGE.charAt(index);
-        index++;
-        setTimeout(showMessage, 50);
-      } else {
-        setTimeout(() => {
-          messageEl.style.filter = "blur(6px)";
-          loaderWrap.style.display = "flex";
-          startLoadingBar();
-        }, 700);
-      }
-    }
-
-    function startLoadingBar() {
-      let width = 0;
-      const interval = setInterval(() => {
-        if (width >= 100) {
-          clearInterval(interval);
-          setTimeout(() => {
-            loaderWrap.style.display = "none";
-            messageEl.style.filter = "none";
-            messageEl.textContent = GREETING;
-          }, 500);
-        } else {
-          width += 2;
-          barInner.style.width = width + "%";
-          marker.textContent = width + "%";
-        }
-      }, 100);
-    }
-
-    showMessage();
+document.getElementById("allowBtn").addEventListener("click", () => {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        localStorage.setItem("allowedLocation", "true");
+        localStorage.setItem("lat", pos.coords.latitude);
+        localStorage.setItem("lon", pos.coords.longitude);
+        location.reload(); // auto reload after user grants access
+      },
+      (err) => {
+        alert("You must allow location access to continue.");
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  } else {
+    alert("Geolocation is not supported by your browser.");
   }
+});
 
-  // --- Location permission logic ---
-  (function(){
-    const real = document.getElementById('realContent');
-    if(real) real.style.display = 'none';
-
-    function showBlocker() {
-      const blocker = document.createElement('div');
-      blocker.id = 'locationBlocker';
-      blocker.style.cssText = `
-        position:fixed;inset:0;display:flex;flex-direction:column;
-        align-items:center;justify-content:center;background:#10071f;color:#b889ff;
-        font-family:Poppins, sans-serif;text-align:center;padding:24px;z-index:9999;
-      `;
-      blocker.innerHTML = `
-        <h2>⚠️ Location Access Required</h2>
-        <p>Please allow location access to view this page.</p>
-      `;
-      document.body.appendChild(blocker);
-    }
-
-    function removeBlocker() {
-      const b = document.getElementById('locationBlocker');
-      if(b) b.remove();
-    }
-
-    function initPage(pos) {
-      const lat = pos.coords.latitude;
-      const lon = pos.coords.longitude;
-      console.log("User Location:", lat, lon);
-
-      removeBlocker();
-      if(real) real.style.display = 'block';
-      startGlassAnimation();
-
-      // show coords overlay
-      const info = document.createElement('div');
-      info.textContent = `📍 lat: ${lat.toFixed(5)} | lon: ${lon.toFixed(5)}`;
-      info.style.cssText = "position:fixed;right:12px;bottom:12px;color:#fff;background:#0008;padding:8px;border-radius:8px;font-size:12px";
-      document.body.appendChild(info);
-    }
-
-    function handleError() {
-      showBlocker();
-    }
-
-    function requestLocation() {
-      showBlocker();
-      navigator.geolocation.getCurrentPosition(initPage, handleError, {
-        enableHighAccuracy: true, timeout: 10000, maximumAge: 0
-      });
-    }
-
-    document.addEventListener('DOMContentLoaded', requestLocation);
-  })();
+window.addEventListener("load", () => {
+  if (localStorage.getItem("allowedLocation") === "true") {
+    const lat = parseFloat(localStorage.getItem("lat"));
+    const lon = parseFloat(localStorage.getItem("lon"));
+    overlay.style.display = "none";
+    realContent.style.display = "flex";
+    let progress = 0;
+    const interval = setInterval(() => {
+      progress += 5;
+      loader.style.width = progress + "%";
+      if (progress >= 100) {
+        clearInterval(interval);
+        msg.textContent = "✅ Access Granted. Welcome!";
+        coordsEl.textContent = `📍 lat: ${lat.toFixed(5)}, lon: ${lon.toFixed(5)}`;
+      }
+    }, 100);
+  }
+});
 </script>
-
 </body>
 </html>
