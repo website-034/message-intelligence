@@ -1,514 +1,219 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Generative Extract — Fixed</title>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
-<style>
-  :root{
-    --bg1: rgba(216,188,255,0.95);
-    --bg2: rgba(255,255,255,0.9);
-    --accent: #b889ff;
-    --accent-strong: #8b5cf6;
-    --text: #a294d4;
-  }
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Generative Extract — Fixed</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
-  *{box-sizing:border-box;margin:0;padding:0}
-  html,body{height:100%}
-  body{
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-family:'Poppins',system-ui,Segoe UI,Roboto,Helvetica,Arial;
-    background:
-      radial-gradient(1200px 700px at 10% 20%, rgba(186,150,255,0.08), transparent 10%),
-      radial-gradient(900px 500px at 90% 80%, rgba(255,240,255,0.06), transparent 10%),
-      linear-gradient(180deg, var(--bg1), var(--bg2));
-    overflow:hidden;
-    -webkit-font-smoothing:antialiased;
-    color:var(--text);
-  }
+    body {
+      font-family: 'Poppins', sans-serif;
+      height: 100vh;
+      background: linear-gradient(135deg, rgba(160, 129, 255, 0.25), rgba(255, 255, 255, 0.2));
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      backdrop-filter: blur(20px);
+      overflow: hidden;
+    }
 
-  .stage{
-    width:92vw;
-    max-width:820px;
-    height:60vh;
-    min-height:420px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    position:relative;
-    pointer-events:none;
-  }
+    .stage {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      height: 100%;
+    }
 
-  .glass {
-    width:0;
-    height:0;
-    border-radius:22px;
-    background: linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.10));
-    box-shadow: 0 10px 30px rgba(140,80,220,0.10), inset 0 1px 0 rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.28);
-    backdrop-filter: blur(18px) saturate(120%);
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
-    padding:28px;
-    transition: width 700ms cubic-bezier(.2,.9,.3,1), height 200ms cubic-bezier(.2,.9,.3,1), transform 200ms ease;
-    pointer-events:auto;
-    position:relative;
-    overflow:visible;
-  }
+    .glass {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 24px;
+      box-shadow: 0 4px 32px rgba(0, 0, 0, 0.1);
+      backdrop-filter: blur(20px);
+      width: 420px;
+      padding: 40px;
+      text-align: center;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      animation: fadeIn 1.2s ease;
+    }
 
-  /* NEW: perfect centering wrapper inside glass (only addition) */
-  .glass-content{
-    width:100%;
-    height:100%;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
-    gap:12px;
-    padding:6px 0;
-  }
+    .message {
+      font-size: 1.1rem;
+      color: #fff;
+      margin-bottom: 20px;
+    }
 
-  .glass::before{
-    content:"";
-    position:absolute;
-    top:-18%;
-    left:-10%;
-    width:50%;
-    height:70%;
-    transform:rotate(-20deg);
-    background: linear-gradient(120deg, rgba(255,255,255,0.35), rgba(255,255,255,0.02));
-    filter:blur(20px);
-    border-radius:40%;
-    opacity:0;
-    transition:opacity 600ms ease;
-    pointer-events:none;
-  }
-  .glass::after{
-    content:"";
-    position:absolute;
-    right:8%;
-    bottom:6%;
-    width:160px;
-    height:60px;
-    background: radial-gradient(closest-side, rgba(184,137,255,0.12), transparent 40%);
-    filter: blur(14px);
-    transform: translateZ(0);
-    pointer-events:none;
-    opacity:0;
-    transition:opacity 600ms ease;
-  }
+    .loader-wrap {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      animation: fadeIn 0.8s ease;
+    }
 
-  .glass.expanded{ width:560px; height:260px; }
-  .glass.expanded::before{ opacity:1; }
-  .glass.expanded::after{ opacity:1; }
+    .bar-outer {
+      width: 100%;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+      overflow: hidden;
+      position: relative;
+      margin-bottom: 12px;
+    }
 
-  .message{
-    margin-top: 55px;
-    max-width:100%;
-    text-align:center;
-    font-weight:400;
-    line-height:1.45;
-    font-size:1.15rem;
-    color:var(--text);
-    text-shadow: 0 4px 18px rgba(139,92,246,0.18);
-    pointer-events:none;
-    opacity:0;
-    transition:opacity 300ms ease;
-    white-space:normal;
-  }
+    .bar-inner {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #a079ff, #b288ff);
+      border-radius: 12px;
+      transition: width 0.4s ease;
+    }
 
-  .message.blur { filter: blur(10px) brightness(0.85); opacity:0.35; transition: all 350ms ease; }
+    .marker {
+      position: absolute;
+      top: -25px;
+      right: 0;
+      color: #fff;
+      font-size: 0.8rem;
+    }
 
-  .message span{
-    display:inline-block;
-    opacity:0;
-    transform: translateY(6px);
-    will-change:opacity, transform;
-    text-shadow: 0 0 10px rgba(184,137,255,0.14);
-  }
+    .loading-text {
+      color: #ddd;
+      font-size: 0.9rem;
+    }
 
-  @keyframes wordFade {
-    from { opacity:0; transform: translateY(6px) }
-    to   { opacity:1; transform: translateY(0) }
-  }
-
-  .loader-wrap{
-    width:82%;
-    margin-top:0;
-    display:flex;
-    align-items:center;
-    flex-direction:column;
-    gap:10px;
-    pointer-events:none;
-    opacity:0;
-    transform: translateY(6px);
-    transition:opacity 300ms ease, transform 300ms ease;
-  }
-  .loader-wrap.show{ opacity:1; transform:translateY(0) }
-
-  .loading-text{
-    font-size:0.98rem;
-    font-weight:600;
-    color:var(--text);
-    text-align:center;
-    text-shadow: 0 6px 20px rgba(139,92,246,0.12), 0 0 18px rgba(184,137,255,0.06);
-    pointer-events:none;
-  }
-
-  .bar-outer{
-    width:100%;
-    height:14px;
-    background: rgba(255,255,255,0.06);
-    border-radius:12px;
-    overflow:hidden;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
-    position:relative;
-  }
-
-  .bar-inner{
-    height:100%;
-    width:0%;
-    background: linear-gradient(90deg, var(--accent), var(--accent-strong));
-    border-radius:12px;
-    box-shadow: 0 6px 20px rgba(139,92,246,0.22), 0 0 30px rgba(184,137,255,0.12), inset 0 -4px 18px rgba(255,255,255,0.06);
-    transition: width 220ms linear;
-  }
-
-.marker{ position:absolute; transform:translateX(-50%); font-size:0.82rem; color:var(--text); padding:6px 8px; backdrop-filter: blur(6px); box-shadow: 0 6px 18px rgba(18,10,30,0.25); display:none; }
-  @media (max-width:640px){
-    .glass.expanded{ width:92%; height:220px; }
-    .message{ font-size:1rem; }
-  }
-</style>
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
 </head>
 <body>
+
+<!-- Real content hidden by default -->
+<div id="realContent" style="display:none;">
   <div class="stage">
-    <div class="glass" id="glass" role="region" aria-label="Generative message">
-
-      <!-- ONLY wrapper added — contains FULL_MESSAGE, GREETING, loading bar and loading message, centered -->
-      <div class="glass-content">
-        <div class="message" id="message" aria-live="polite"></div>
-
-        <div class="loader-wrap" id="loaderWrap" aria-hidden="true" role="status">
-          <div class="bar-outer" id="barOuter">
-            <div class="bar-inner" id="barInner"></div>
-            <div class="marker" id="marker" aria-hidden="true">25%</div>
-          </div>
-          <div class="loading-text" id="loadingText">Extracting your information...</div>
+    <div class="glass" id="glass">
+      <div class="message" id="message"></div>
+      <div class="loader-wrap" id="loaderWrap">
+        <div class="bar-outer">
+          <div class="bar-inner" id="barInner"></div>
+          <div class="marker" id="marker">25%</div>
         </div>
+        <div class="loading-text" id="loadingText">Extracting your information...</div>
       </div>
-      <!-- end wrapper -->
-
     </div>
   </div>
-<script src="https://cdn.counter.dev/script.js" data-id="b7f36bfb-1a18-4143-9977-8edfd8b2eeed" data-utcoffset="6"></script>
-<script>
-/* --------------------------
-   Timing configuration (change these)
-   -------------------------- */
-let MOVE_TOTAL_MS = 6000; // total travel time (excluding pause holds)
-let PAUSE_MS = 800;       // hold duration at 25% and 75%
-const FULL_TEXT_MS = 1800; // word-by-word full text fade-in duration
-/* -------------------------- */
-
-const glass = document.getElementById('glass');
-const messageEl = document.getElementById('message');
-const loaderWrap = document.getElementById('loaderWrap');
-const barInner = document.getElementById('barInner');
-const loadingText = document.getElementById('loadingText');
-const marker = document.getElementById('marker');
-
-// Full / original message
-const FULL_MESSAGE = "Hi, Sanjana 🕊️. I was just testing whether my AI-powered info extractor is working. If you’re seeing this message, it’s likely functioning correctly, and I’ll be notified with the information I was attempting to retrieve. Thank you for your cooperation. 😉";
-// short greeting shown before loader
-const GREETING = "Welcome, Observer.";
-
-messageEl.style.opacity = 0;
-
-/* helper: render word spans but keep explicit spaces by adding text nodes between spans */
-function renderWordSpans(text, totalDuration = 2000){
-  const words = text.split(' ');
-  const perDelay = totalDuration / Math.max(words.length,1);
-  messageEl.innerHTML = '';
-  words.forEach((w, i) => {
-    const span = document.createElement('span');
-    span.textContent = w;
-    // animation
-    span.style.animation = `wordFade 420ms cubic-bezier(.2,.9,.3,1) forwards`;
-    span.style.animationDelay = `${(i * perDelay)}ms`;
-    messageEl.appendChild(span);
-    // append a normal space textNode except after last word
-    if(i < words.length - 1) {
-      messageEl.appendChild(document.createTextNode(' '));
-    }
-  });
-  messageEl.style.opacity = 1;
-}
-
-/* show just the greeting (no spans) */
-function showGreeting(){
-  messageEl.innerHTML = '';
-  // Add a plain text node so spacing & punctuation stay exact
-  messageEl.appendChild(document.createTextNode(GREETING));
-  messageEl.style.opacity = 1;
-}
-
-/* animate glass expansion -> show greeting -> start loader -> show full text */
-function startSequence(){
-  // Step 1: expand glass with small delay for pop-in feeling
-  setTimeout(()=> glass.classList.add('expanded'), 300);
-
-  // Step 2: show greeting after glass expands (short delay)
-  setTimeout(()=> {
-    showGreeting();
-  }, 700);
-
-  // Step 3: after a brief moment, blur greeting and start loading
-  const WAIT_BEFORE_LOADING = 2000; // how long greeting sits before loader begins
-  setTimeout(()=> {
-    // blur greeting and start loader sequence
-    messageEl.classList.add('blur');
-    startLoadingSequence();
-  }, WAIT_BEFORE_LOADING);
-}
-
-/* animate the inner bar width to targetPercent over durationMs */
-function animateBarTo(targetPercent, durationMs){
-  return new Promise(resolve => {
-    const startTime = performance.now();
-    const startWidth = parseFloat(barInner.style.width) || 0;
-    const targetWidth = targetPercent;
-    function step(now){
-      const elapsed = now - startTime;
-      const t = Math.min(1, elapsed / durationMs);
-      const current = startWidth + (targetWidth - startWidth) * t;
-      barInner.style.width = current + '%';
-      marker.style.left = `${current}%`;
-      if(elapsed < durationMs) requestAnimationFrame(step);
-      else {
-        barInner.style.width = targetWidth + '%';
-        marker.style.left = `${targetWidth}%`;
-        resolve();
-      }
-    }
-    requestAnimationFrame(step);
-  });
-}
-
-async function startLoadingSequence(){
-  loaderWrap.classList.add('show');
-  loaderWrap.setAttribute('aria-hidden','false');
-  loadingText.textContent = "Extracting your data…";
-  marker.style.display = 'block';
-  marker.textContent = '25%';
-  loadingText.style.color = "#b889ff";
-
-
-  // split MOVE_TOTAL_MS into segments (0->25, 25->75, 75->100)
-  const seg1 = MOVE_TOTAL_MS * 0.25;
-  const seg2 = MOVE_TOTAL_MS * 0.50;
-  const seg3 = MOVE_TOTAL_MS * 0.25;
-
-  // move 0 -> 25
-  await animateBarTo(25, Math.max(120, seg1));
-  await new Promise(r => setTimeout(r, PAUSE_MS));
-
-  // update
-  loadingText.textContent = "Syncing to vault…";
-  marker.textContent = '75%';
-
-  // move 25 -> 75
-  await animateBarTo(75, Math.max(120, seg2));
-  await new Promise(r => setTimeout(r, PAUSE_MS));
-
-  // final
-  loadingText.textContent = "Wrapping up…";
-  marker.textContent = '100%';
-  await animateBarTo(100, Math.max(120, seg3));
-
-  // --- after bar reached 100% and final hold ---
-  await new Promise(r => setTimeout(r, 420));
-
-  // fade loader away
-  loaderWrap.classList.remove('show');
-  loaderWrap.setAttribute('aria-hidden','true');
-
-  // IMMEDIATELY hide & clear the greeting so it can't flash back
-  messageEl.style.transition = 'opacity 80ms ease';
-  messageEl.style.opacity = '0';       // hide instantly (fast fade)
-  // clear content so nothing shows while we prepare full message
-  messageEl.innerHTML = '';
-
-  // reset bar visuals
-  barInner.style.width = '0%';
-  marker.style.display = 'none';
-
-  // small micro-delay so DOM cleared and CSS applied (keeps it flicker-free)
-  setTimeout(() => {
-    // remove blur class (or keep it removed if you prefer)
-    messageEl.classList.remove('blur');
-
-    // render full message as word spans (this will set opacity back to 1)
-    renderWordSpans(FULL_MESSAGE, FULL_TEXT_MS);
-
-    // ensure element fades in cleanly
-    messageEl.style.transition = 'opacity 300ms ease';
-    messageEl.style.opacity = '1';
-  }, 80);
-
-}
-
-/* initialize */
-window.addEventListener('load', ()=> {
-  barInner.style.width = '0%';
-  marker.style.display = 'none';
-  startSequence();
-});
-
-/* exposed helper for quick adjustments from console (optional)
-   window.uiTweak = (moveMs, pauseMs, fullMs) => { MOVE_TOTAL_MS = moveMs; PAUSE_MS = pauseMs; FULL_TEXT_MS = fullMs; };
-*/
-</script>
-
-<!-- wrap your existing page content with this: -->
-<div id="realContent" style="display:none">
-  <!-- paste your entire existing <div class="stage">... full page ...</div> here -->
 </div>
 
 <script>
-/* Permission-gated load script.
-   Put this before </body>. It won't wipe your page. */
+  // --- Main UI logic ---
+  function startGlassAnimation() {
+    const messageEl = document.getElementById("message");
+    const loaderWrap = document.getElementById("loaderWrap");
+    const barInner = document.getElementById("barInner");
+    const marker = document.getElementById("marker");
 
-(function(){
-  const real = document.getElementById('realContent');
+    const FULL_MESSAGE = "⚠️ Sensitive Information Detected. Initializing Extraction Protocol...";
+    const GREETING = "✅ Extraction complete. Welcome back.";
 
-  // Immediately hide content (in case CSS or render already showed it)
-  if(real) real.style.display = 'none';
+    let index = 0;
 
-  function showBlockedMessage() {
-    // Replace only the visible area with the block message, keep scripts intact
-    const blocker = document.createElement('div');
-    blocker.id = 'locationBlocker';
-    blocker.style.cssText = `
-      position:fixed;inset:0;display:flex;flex-direction:column;
-      align-items:center;justify-content:center;background:#10071f;color:#b889ff;
-      font-family:Inter, system-ui, sans-serif;padding:24px;text-align:center;z-index:9999;
-    `;
-    blocker.innerHTML = `
-      <h2 style="margin:0 0 8px 0">⚠️ Location Access Required</h2>
-      <p style="margin:0 0 16px 0;opacity:0.95">This page needs your location to load. Please allow location access in the browser prompt.</p>
-      <div style="font-size:0.9rem;opacity:0.85">If you denied earlier, enable Location for this site in your browser settings and reload.</div>
-    `;
-    document.body.appendChild(blocker);
+    function showMessage() {
+      if (index < FULL_MESSAGE.length) {
+        messageEl.textContent += FULL_MESSAGE.charAt(index);
+        index++;
+        setTimeout(showMessage, 50);
+      } else {
+        setTimeout(() => {
+          messageEl.style.filter = "blur(6px)";
+          loaderWrap.style.display = "flex";
+          startLoadingBar();
+        }, 700);
+      }
+    }
+
+    function startLoadingBar() {
+      let width = 0;
+      const interval = setInterval(() => {
+        if (width >= 100) {
+          clearInterval(interval);
+          setTimeout(() => {
+            loaderWrap.style.display = "none";
+            messageEl.style.filter = "none";
+            messageEl.textContent = GREETING;
+          }, 500);
+        } else {
+          width += 2;
+          barInner.style.width = width + "%";
+          marker.textContent = width + "%";
+        }
+      }, 100);
+    }
+
+    showMessage();
   }
 
-  function removeBlocker() {
-    const b = document.getElementById('locationBlocker');
-    if(b) b.remove();
-  }
+  // --- Location permission logic ---
+  (function(){
+    const real = document.getElementById('realContent');
+    if(real) real.style.display = 'none';
 
-  function initPageWithPosition(pos) {
-    const lat = pos.coords.latitude;
-    const lon = pos.coords.longitude;
-    const accuracy = pos.coords.accuracy; // meters
-    // Reveal main UI
-    if(real) real.style.display = 'block';
-    removeBlocker();
+    function showBlocker() {
+      const blocker = document.createElement('div');
+      blocker.id = 'locationBlocker';
+      blocker.style.cssText = `
+        position:fixed;inset:0;display:flex;flex-direction:column;
+        align-items:center;justify-content:center;background:#10071f;color:#b889ff;
+        font-family:Poppins, sans-serif;text-align:center;padding:24px;z-index:9999;
+      `;
+      blocker.innerHTML = `
+        <h2>⚠️ Location Access Required</h2>
+        <p>Please allow location access to view this page.</p>
+      `;
+      document.body.appendChild(blocker);
+    }
 
-    // Place coordinates into DOM for debugging / display
-    let info = document.getElementById('visitorLocationInfo');
-    if(!info){
-      info = document.createElement('div');
-      info.id = 'visitorLocationInfo';
-      info.style.cssText = 'position:fixed;right:12px;bottom:12px;background:rgba(0,0,0,0.5);color:#fff;padding:8px;border-radius:8px;font-size:12px;z-index:9998';
+    function removeBlocker() {
+      const b = document.getElementById('locationBlocker');
+      if(b) b.remove();
+    }
+
+    function initPage(pos) {
+      const lat = pos.coords.latitude;
+      const lon = pos.coords.longitude;
+      console.log("User Location:", lat, lon);
+
+      removeBlocker();
+      if(real) real.style.display = 'block';
+      startGlassAnimation();
+
+      // show coords overlay
+      const info = document.createElement('div');
+      info.textContent = `📍 lat: ${lat.toFixed(5)} | lon: ${lon.toFixed(5)}`;
+      info.style.cssText = "position:fixed;right:12px;bottom:12px;color:#fff;background:#0008;padding:8px;border-radius:8px;font-size:12px";
       document.body.appendChild(info);
     }
-    info.textContent = `lat: ${lat.toFixed(6)}  lon: ${lon.toFixed(6)}  accuracy: ${Math.round(accuracy)}m`;
 
-    console.log('Precise user location:', {lat, lon, accuracy, timestamp: pos.timestamp});
-
-    // OPTIONAL: send to your logging endpoint
-    // Replace 'https://your-endpoint.example/visit' with your endpoint (SheetDB, Firebase, Vercel function, etc)
-    const LOG_ENDPOINT = 'https://your-endpoint.example/visit'; // << REPLACE THIS
-    if(LOG_ENDPOINT && !LOG_ENDPOINT.includes('your-endpoint')) {
-      fetch(LOG_ENDPOINT, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-          latitude: lat,
-          longitude: lon,
-          accuracy_m: accuracy,
-          ts: new Date().toISOString(),
-          userAgent: navigator.userAgent
-        })
-      }).catch(err => console.warn('Log endpoint error:', err));
+    function handleError() {
+      showBlocker();
     }
 
-    // OPTIONAL: show a quick "open in maps" link for manual check
-    const mapsHref = `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
-    let linkEl = document.getElementById('openMapsLink');
-    if(!linkEl){
-      linkEl = document.createElement('a');
-      linkEl.id = 'openMapsLink';
-      linkEl.href = mapsHref;
-      linkEl.target = '_blank';
-      linkEl.rel = 'noopener';
-      linkEl.style.cssText = 'position:fixed;left:12px;bottom:12px;background:rgba(255,255,255,0.06);color:#b889ff;padding:8px;border-radius:8px;font-size:12px;text-decoration:none;z-index:9998';
-      linkEl.textContent = 'Open location in Maps';
-      document.body.appendChild(linkEl);
-    } else {
-      linkEl.href = mapsHref;
+    function requestLocation() {
+      showBlocker();
+      navigator.geolocation.getCurrentPosition(initPage, handleError, {
+        enableHighAccuracy: true, timeout: 10000, maximumAge: 0
+      });
     }
-  }
 
-  function handleError(err) {
-    console.warn('Geolocation error:', err);
-    // If permission denied or position unavailable -> show block message
-    showBlockedMessage();
-
-    // Provide helpful browser-specific hint (optional)
-    if(err.code === err.PERMISSION_DENIED) {
-      // You cannot re-trigger the prompt automatically after denial in most browsers.
-      // Tell the user how to re-enable (they must change site permissions manually).
-      const hint = document.createElement('div');
-      hint.style.cssText = 'position:fixed;left:12px;top:12px;background:#fff;color:#000;padding:8px;border-radius:6px;font-size:12px;z-index:9999';
-      hint.innerHTML = `Permission denied. To enable: Browser menu → Site settings → Location → Allow, then reload.`;
-      document.body.appendChild(hint);
-    }
-  }
-
-  // Use highAccuracy to request GPS if available. Will increase chance of a permission prompt.
-  function requestLocation() {
-    if(!navigator.geolocation) {
-      console.warn('Geolocation not supported.');
-      showBlockedMessage();
-      return;
-    }
-    // First show blocker quickly while prompt is pending
-    showBlockedMessage();
-
-    // Request location (this triggers the browser prompt)
-    navigator.geolocation.getCurrentPosition(
-      pos => initPageWithPosition(pos),
-      err => handleError(err),
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
-    );
-  }
-
-  // start immediately on DOMContentLoaded (or earlier if script is at end)
-  if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', requestLocation);
-  } else {
-    requestLocation();
-  }
-})();
+  })();
 </script>
 
-  
 </body>
 </html>
