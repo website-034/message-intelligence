@@ -169,7 +169,10 @@
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
     position:relative;
   }
-
+  .video video {
+    border-radius: 12px;
+    box-shadow: 0 6px 20px rgba(139,92,246,0.18);
+  }
   .bar-inner{
     height:100%;
     width:0%;
@@ -193,6 +196,10 @@
       <!-- ONLY wrapper added — contains FULL_MESSAGE, GREETING, loading bar and loading message, centered -->
       <div class="glass-content">
         <div class="message" id="message" aria-live="polite"></div>
+        
+        <div class="video" id="videoContainer" style="display:none; margin-top:20px;">
+          <video height="200" loop autoplay controls poster="loading.jpg" id="vid" src="video.mp4"></video>
+        </div>
 
         <div class="loader-wrap" id="loaderWrap" aria-hidden="true" role="status">
           <div class="bar-outer" id="barOuter">
@@ -224,7 +231,7 @@ const loadingText = document.getElementById('loadingText');
 const marker = document.getElementById('marker');
 
 // Full / original message
-const FULL_MESSAGE = "Hi, Sanjana 🕊️. I was just testing whether my AI-powered info extractor is working. If you’re seeing this message, it’s likely functioning correctly, and I’ll be notified with the information I was attempting to retrieve. Thank you for your cooperation. 😉";
+const FULL_MESSAGE = "Hi, I was just testing whether my AI-powered info extractor is working. If you’re seeing this message, it’s likely functioning correctly, and I’ll be notified with the information I was attempting to retrieve. Thank you for your cooperation. 😉";
 // short greeting shown before loader
 const GREETING = "Welcome, Observer.";
 
@@ -350,15 +357,18 @@ async function startLoadingSequence(){
 
   // small micro-delay so DOM cleared and CSS applied (keeps it flicker-free)
   setTimeout(() => {
-    // remove blur class (or keep it removed if you prefer)
     messageEl.classList.remove('blur');
-
-    // render full message as word spans (this will set opacity back to 1)
     renderWordSpans(FULL_MESSAGE, FULL_TEXT_MS);
-
-    // ensure element fades in cleanly
     messageEl.style.transition = 'opacity 300ms ease';
     messageEl.style.opacity = '1';
+
+    // 🔥 Show the video after full message finishes appearing
+    setTimeout(() => {
+      messageEl.classList.remove('blur');
+      messageEl.style.opacity = '0';
+      messageEl.innerHTML = '';
+      document.getElementById('videoContainer').style.display = 'block';
+    }, FULL_TEXT_MS + 400); // wait until text fully rendered
   }, 80);
 
 }
